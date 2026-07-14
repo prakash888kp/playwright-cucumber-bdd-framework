@@ -95,9 +95,11 @@ config/
 src/
   config/envLoader.js        # layered env resolution
   features/{ui,api,rag}/     # .feature files
-  steps/{ui,api,rag}/        # step definitions
-  pages/                     # Page Object Model
+  steps/{ui,api,rag}/        # step definitions (pure orchestration, no locators)
+  selectors/                 # one selector file per page — the only place locators live
+  pages/                     # page objects: declarative flows on BasePage actions
   support/world.js, hooks.js # per-scenario browser/API/Bedrock lifecycle
+  support/pageManager.js     # lazy page-object factory (this.pages.loginPage)
   helpers/                   # logger, excelReader, dataManager, apiHelper,
                              # bedrockHelper, ragValidator, commonUtils
   runners/excelRunner.js     # run mode 1

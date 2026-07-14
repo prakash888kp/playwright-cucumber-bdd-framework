@@ -16,6 +16,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Cucumber BDD on Playwright (plain JS, CommonJS). Three test types coexist, distinguished by tags: `@ui` (browser via POM in `src/pages/`), `@api` (Playwright request context via `src/helpers/apiHelper.js`), `@rag` (Amazon Bedrock Knowledge Base validation via `src/helpers/bedrockHelper.js` + `ragValidator.js`).
 
+UI layering is strict: locators live ONLY in `src/selectors/<page>Selectors.js` as descriptor objects (`{role,name}`, `{placeholder}`, `{testId}`, `{css}`...), resolved by `BasePage.locate()`. Page objects call BasePage's auto-logged action wrappers (`click`, `fill`, `expectText`, ...) — they contain flows, not locators or raw Playwright calls. Steps access pages only via `this.pages.<name>` (lazy `PageManager` created per UI scenario in hooks). New page = selectors file + page class + one getter in `src/support/pageManager.js`.
+
 Key flow, spanning multiple files:
 
 - **Config resolution** (`src/config/envLoader.js`, loaded at the top of `cucumber.js`): shell/CLI env > `config/env/.env.<ENV>` > root `.env`. `cucumber.js` turns `TAGS`/`PARALLEL`/`RETRY` env vars into cucumber options — env vars are how run behavior is controlled, not CLI flags alone.

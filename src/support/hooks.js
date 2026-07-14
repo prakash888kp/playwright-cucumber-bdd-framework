@@ -7,6 +7,7 @@ const { chromium, firefox, webkit } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 const { logger, scenarioLogger } = require('../helpers/logger');
+const { PageManager } = require('./pageManager');
 
 let browser;
 const TRACE_DIR = path.resolve(__dirname, '..', '..', 'reports', 'traces');
@@ -44,6 +45,7 @@ Before(async function (scenario) {
     }
     this.page = await this.context.newPage();
     this.page.setDefaultTimeout(Number(process.env.DEFAULT_TIMEOUT || 30000));
+    this.pages = new PageManager(this.page, this.log);
   }
 });
 
