@@ -10,6 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run test:rerun` — re-run failures from `reports/@rerun.txt`
 - `npm run report` — manual rebuild only; every run already auto-creates a timestamped archive `reports/run_<ts>_<env>_<verdict>/` via `scripts/run.js` and appends to `reports/run-history.json`
 - `npm run generate:excel` — regenerate both xlsx workbooks (**overwrites manual edits**)
+- `npm run dashboard` — local web UI at `http://localhost:4444` (`scripts/dashboard.js`, zero deps): pick scenarios/env/browser from dropdowns, trigger runs (SSE live console), browse run history and open archived reports; spawns `scripts/run.js`/`excelRunner.js` so the archive funnel is preserved
 - Env overrides: `npx cross-env ENV=dev BROWSER=firefox HEADLESS=false TAGS=@smoke npm test`
 
 ## Architecture

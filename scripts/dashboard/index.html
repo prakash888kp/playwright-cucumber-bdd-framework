@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Test Automation Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --panel2: #1c2230; --border: #2d333b;
+    --text: #e6edf3; --muted: #8b949e; --accent: #3fb950; --accent2: #58a6ff;
+    --red: #f85149; --yellow: #d29922; --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 14px;
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 28px; border-bottom: 1px solid var(--border); background: var(--panel);
+  }
+  header h1 { font-size: 17px; font-weight: 600; letter-spacing: .3px; }
+  header h1 .dot { color: var(--accent); }
+  .status-pill {
+    padding: 5px 14px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border); color: var(--muted); background: var(--panel2);
+  }
+  .status-pill.running { color: #f0b429; border-color: #f0b42955; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 50% { opacity: .55; } }
+
+  .tabs { display: flex; gap: 4px; padding: 12px 28px 0; background: var(--panel); border-bottom: 1px solid var(--border); }
+  .tab {
+    padding: 10px 22px; cursor: pointer; border: 1px solid transparent; border-bottom: none;
+    border-radius: 8px 8px 0 0; color: var(--muted); font-weight: 600; font-size: 13px; user-select: none;
+  }
+  .tab.active { background: var(--bg); border-color: var(--border); color: var(--text); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  main { padding: 22px 28px; max-width: 1400px; margin: 0 auto; }
+  .grid { display: grid; grid-template-columns: 330px 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 950px) { .grid { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .card h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
+    padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--panel2);
+  }
+  .card .body { padding: 16px; }
+
+  label.field { display: block; margin-bottom: 12px; }
+  label.field span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  select, input[type=text] {
+    width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 10px; font-size: 13px; outline: none;
+  }
+  select:focus, input:focus { border-color: var(--accent2); }
+
+  .radio-row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .radio-row label {
+    display: flex; align-items: center; gap: 8px; padding: 9px 12px; border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer; font-size: 13px; background: var(--bg);
+  }
+  .radio-row label:has(input:checked) { border-color: var(--accent2); background: #58a6ff14; }
+  .radio-row input { accent-color: var(--accent2); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+    border: none; border-radius: 8px; padding: 11px 18px; font-size: 14px; font-weight: 600; width: 100%;
+  }
+  .btn-run { background: var(--accent); color: #04160a; }
+  .btn-run:hover { filter: brightness(1.1); }
+  .btn-run:disabled { background: #2d333b; color: var(--muted); cursor: not-allowed; }
+  .btn-stop { background: transparent; border: 1px solid var(--red); color: var(--red); margin-top: 8px; }
+  .btn-stop:hover { background: #f8514918; }
+
+  .scenario-toolbar { display: flex; gap: 10px; margin-bottom: 12px; }
+  .scenario-toolbar input { flex: 1; }
+  .mini-btn {
+    background: var(--panel2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  }
+  .mini-btn:hover { color: var(--text); border-color: var(--accent2); }
+  .group-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 14px 0 6px; }
+  .scenario {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--border);
+    border-radius: 8px; margin-bottom: 6px; cursor: pointer; background: var(--bg); font-size: 13px;
+  }
+  .scenario:has(input:checked) { border-color: var(--accent); background: #3fb95010; }
+  .scenario input { accent-color: var(--accent); }
+  .scenario .id { font-family: Consolas, monospace; color: var(--accent2); font-size: 12px; min-width: 92px; }
+  .scenario .name { flex: 1; }
+  .badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px; letter-spacing: .5px; }
+  .badge.UI { background: #58a6ff22; color: var(--accent2); }
+  .badge.API { background: #3fb95022; color: var(--accent); }
+  .badge.RAG { background: #d2992222; color: var(--yellow); }
+  .badge.PASSED { background: #3fb95022; color: var(--accent); }
+  .badge.FAILED { background: #f8514922; color: var(--red); }
+
+  .console {
+    background: #010409; font-family: Consolas, 'Courier New', monospace; font-size: 12px;
+    padding: 14px; height: 320px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+    color: #9da9b5; line-height: 1.55;
+  }
+  .console .sys { color: var(--accent2); font-weight: 600; }
+  .console .err { color: var(--red); }
+  .console .ok { color: var(--accent); }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 18px; }
+  .stat { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .stat .num { font-size: 26px; font-weight: 700; }
+  .stat .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .stat .num.green { color: var(--accent); } .stat .num.red { color: var(--red); } .stat .num.blue { color: var(--accent2); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 14px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); background: var(--panel2); }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:hover td { background: #ffffff06; }
+  td a { color: var(--accent2); text-decoration: none; font-weight: 600; }
+  td a:hover { text-decoration: underline; }
+  .counts span { margin-right: 8px; font-weight: 600; }
+  .hidden { display: none !important; }
+  .empty { color: var(--muted); text-align: center; padding: 40px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Test Automation Dashboard <span class="dot">●</span> <span style="font-weight:400;color:var(--muted);font-size:13px">Playwright + Cucumber BDD</span></h1>
+  <div class="status-pill" id="statusPill">IDLE</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="exec">▶ Execution</div>
+  <div class="tab" data-tab="history">🕘 Run History</div>
+</div>
+
+<main>
+  <!-- ============ EXECUTION TAB ============ -->
+  <section id="tab-exec">
+    <div class="grid">
+      <div>
+        <div class="card">
+          <h2>Trigger</h2>
+          <div class="body">
+            <div class="radio-row">
+              <label><input type="radio" name="mode" value="tags" checked> Selected scenarios (dropdown)</label>
+              <label><input type="radio" name="mode" value="excel"> Excel control sheet (Run = YES)</label>
+              <label><input type="radio" name="mode" value="profile"> Profile / env-driven</label>
+            </div>
+            <label class="field" id="profileField" style="display:none">
+              <span>Profile</span>
+              <select id="profile">
+                <option>smoke</option><option>regression</option>
+                <option>ui</option><option>api</option><option>rag</option>
+              </select>
+            </label>
+            <label class="field"><span>Environment</span>
+              <select id="env"><option>qa</option><option>dev</option><option>prod</option></select>
+            </label>
+            <label class="field"><span>Browser</span>
+              <select id="browser"><option>chromium</option><option>firefox</option><option>webkit</option></select>
+            </label>
+            <label class="field"><span>Headless</span>
+              <select id="headless"><option value="true">Yes (headless)</option><option value="false">No (visible browser)</option></select>
+            </label>
+            <label class="field"><span>Step screenshots</span>
+              <select id="screenshots"><option value="on">Every step</option><option value="failure">On failure only</option><option value="off">Off</option></select>
+            </label>
+            <button class="btn btn-run" id="runBtn">▶ &nbsp;Run Tests</button>
+            <button class="btn btn-stop hidden" id="stopBtn">■ &nbsp;Stop Run</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card" id="scenarioCard">
+          <h2>Scenarios <span id="selCount" style="float:right;text-transform:none;letter-spacing:0"></span></h2>
+          <div class="body">
+            <div class="scenario-toolbar">
+              <input type="text" id="search" placeholder="Search scenarios..." />
+              <button class="mini-btn" id="selectAll">Select all</button>
+              <button class="mini-btn" id="selectNone">Clear</button>
+            </div>
+            <div id="scenarioList"><div class="empty">Loading scenarios from execution-control.xlsx…</div></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <h2>Live Console</h2>
+          <div class="console" id="console">Waiting for a run…</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HISTORY TAB ============ -->
+  <section id="tab-history" class="hidden">
+    <div class="stats" id="histStats"></div>
+    <div class="card">
+      <h2>Previous Runs</h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>Timestamp</th><th>Env</th><th>Browser</th><th>Tags / Mode</th>
+            <th>Results</th><th>Verdict</th><th>Report</th>
+          </tr></thead>
+          <tbody id="histBody"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+let scenarios = [];
+
+// ---------------- tabs
+$$('.tab').forEach(t => t.onclick = () => {
+  $$('.tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  $('#tab-exec').classList.toggle('hidden', t.dataset.tab !== 'exec');
+  $('#tab-history').classList.toggle('hidden', t.dataset.tab !== 'history');
+  if (t.dataset.tab === 'history') loadHistory();
+});
+
+// ---------------- trigger mode
+$$('input[name=mode]').forEach(r => r.onchange = () => {
+  const m = $('input[name=mode]:checked').value;
+  $('#profileField').style.display = m === 'profile' ? 'block' : 'none';
+  $('#scenarioCard').style.opacity = m === 'tags' ? 1 : .45;
+});
+
+// ---------------- scenarios
+async function loadScenarios() {
+  scenarios = await (await fetch('/api/scenarios')).json();
+  renderScenarios();
+}
+function renderScenarios() {
+  const q = $('#search').value.toLowerCase();
+  const groups = {};
+  scenarios
+    .filter(s => !q || `${s.ScenarioID} ${s.ScenarioName} ${s.Feature}`.toLowerCase().includes(q))
+    .forEach(s => (groups[s.Type || 'Other'] ||= []).push(s));
+  const html = Object.entries(groups).map(([type, rows]) => `
+    <div class="group-title">${type} (${rows.length})</div>
+    ${rows.map(s => `
+      <label class="scenario">
+        <input type="checkbox" value="${s.ScenarioID}" ${String(s.Run).toUpperCase() === 'YES' ? 'checked' : ''}>
+        <span class="id">@${s.ScenarioID}</span>
+        <span class="name">${s.ScenarioName || ''}</span>
+        <span class="badge ${type}">${type}</span>
+      </label>`).join('')}
+  `).join('') || '<div class="empty">No scenarios match</div>';
+  $('#scenarioList').innerHTML = html;
+  $$('#scenarioList input').forEach(c => c.onchange = updateCount);
+  updateCount();
+}
+function updateCount() {
+  const n = $$('#scenarioList input:checked').length;
+  $('#selCount').textContent = `${n} selected`;
+}
+$('#search').oninput = renderScenarios;
+$('#selectAll').onclick = () => { $$('#scenarioList input').forEach(c => c.checked = true); updateCount(); };
+$('#selectNone').onclick = () => { $$('#scenarioList input').forEach(c => c.checked = false); updateCount(); };
+
+// ---------------- console / SSE
+const consoleEl = $('#console');
+function logLine(line) {
+  const div = document.createElement('div');
+  if (line.startsWith('>>>')) div.className = 'sys';
+  else if (/FAILED|Error|✖|error/i.test(line)) div.className = 'err';
+  else if (/PASSED|✔|passed/i.test(line)) div.className = 'ok';
+  div.textContent = line;
+  consoleEl.appendChild(div);
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+function connectSSE() {
+  const es = new EventSource('/api/logs');
+  es.addEventListener('log', (e) => logLine(JSON.parse(e.data)));
+  es.addEventListener('done', () => { setRunning(false); loadHistory(); });
+}
+
+// ---------------- run / stop
+function setRunning(on) {
+  $('#runBtn').disabled = on;
+  $('#stopBtn').classList.toggle('hidden', !on);
+  const pill = $('#statusPill');
+  pill.textContent = on ? 'RUNNING' : 'IDLE';
+  pill.classList.toggle('running', on);
+}
+$('#runBtn').onclick = async () => {
+  const mode = $('input[name=mode]:checked').value;
+  const body = {
+    mode,
+    tags: $$('#scenarioList input:checked').map(c => c.value),
+    profile: $('#profile').value,
+    env: $('#env').value,
+    browser: $('#browser').value,
+    headless: $('#headless').value === 'true',
+    screenshots: $('#screenshots').value,
+  };
+  consoleEl.innerHTML = '';
+  const res = await fetch('/api/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) { logLine('>>> ' + (await res.json()).error); return; }
+  setRunning(true);
+};
+$('#stopBtn').onclick = () => fetch('/api/stop', { method: 'POST' });
+
+// ---------------- history
+async function loadHistory() {
+  const runs = await (await fetch('/api/history')).json();
+  const total = runs.length;
+  const passed = runs.filter(r => r.verdict === 'PASSED').length;
+  const scen = runs.reduce((a, r) => a + (r.scenarios || 0), 0);
+  $('#histStats').innerHTML = `
+    <div class="stat"><div class="num blue">${total}</div><div class="lbl">Total runs</div></div>
+    <div class="stat"><div class="num green">${total ? Math.round(passed / total * 100) : 0}%</div><div class="lbl">Run pass rate</div></div>
+    <div class="stat"><div class="num">${scen}</div><div class="lbl">Scenarios executed</div></div>
+    <div class="stat"><div class="num ${runs[0]?.verdict === 'FAILED' ? 'red' : 'green'}">${runs[0]?.verdict || '—'}</div><div class="lbl">Latest verdict</div></div>`;
+  $('#histBody').innerHTML = runs.map(r => {
+    const rel = (r.report || '').replace(/\\/g, '/').replace(/^reports\//, '');
+    return `<tr>
+      <td>${(r.timestamp || '').replace('_', ' &nbsp;').replace(/-(\d\d)-(\d\d)$/, ':$1:$2')}</td>
+      <td>${(r.env || '').toUpperCase()}</td>
+      <td>${r.browser || ''}</td>
+      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.tags || ''}">${r.tags || ''}</td>
+      <td class="counts">
+        <span style="color:var(--accent)">✔ ${r.passed}</span>
+        <span style="color:var(--red)">✖ ${r.failed}</span>
+        <span style="color:var(--muted)">⊘ ${r.skipped}</span>
+      </td>
+      <td><span class="badge ${r.verdict}">${r.verdict}</span></td>
+      <td><a href="/reports/${rel}" target="_blank">Open report ↗</a></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" class="empty">No runs yet — trigger one from the Execution tab</td></tr>';
+}
+
+// ---------------- init
+(async () => {
+  await loadScenarios();
+  const st = await (await fetch('/api/status')).json();
+  setRunning(st.running);
+  connectSSE();
+  loadHistory();
+})();
+</script>
+</body>
+</html>

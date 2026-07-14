@@ -19,7 +19,8 @@
     "test:headed": "cross-env HEADLESS=false node scripts/run.js",
     "report": "node scripts/generateReport.js",
     "generate:excel": "node scripts/generateExcels.js",
-    "postinstall": "playwright install chromium"
+    "postinstall": "playwright install chromium",
+    "dashboard": "node scripts/dashboard.js"
   },
   "keywords": [
     "playwright",

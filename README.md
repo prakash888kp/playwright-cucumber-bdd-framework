@@ -26,6 +26,16 @@ npm run report              # build reports/html/index.html
 | 1. Excel-driven | `npm run test:excel` | Manual testers pick scenarios by setting `Run = YES` in `config/execution-control.xlsx` |
 | 2. Env-driven | Set `TAGS`, `BROWSER`, `ENV`, etc. in `.env` / `config/env/.env.<env>`, then `npm run test:env` | CI pipelines with per-environment config |
 | 3. Command line | `npm test -- --tags "@smoke"` or profiles: `npm run test:smoke`, `test:regression`, `test:ui`, `test:api`, `test:rag` | Ad-hoc local runs |
+| 4. Web dashboard | `npm run dashboard` → http://localhost:4444 | Pick scenarios from dropdowns, trigger any mode, watch live console output, browse past run reports |
+
+### The dashboard (`npm run dashboard`)
+
+A zero-dependency local web UI (`scripts/dashboard.js`) with two tabs:
+
+- **Execution** — choose the trigger (selected scenarios / Excel control sheet / profile), pick env, browser, headless, and screenshot mode from dropdowns, then run with a live streaming console. Scenario checkboxes are loaded from `execution-control.xlsx` (rows with `Run = YES` come pre-selected).
+- **Run History** — stats (total runs, pass rate, latest verdict) plus a table of every archived run from `run-history.json`, each with a one-click link that opens its timestamped HTML report.
+
+Runs triggered from the dashboard go through the same funnel as every other mode, so archives and history keep working identically. Port: `DASHBOARD_PORT` (default 4444).
 
 Modifier examples:
 
