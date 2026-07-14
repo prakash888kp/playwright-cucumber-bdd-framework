@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Test Execution Report</title>
+<style>
+  :root {
+    --bg: #f4f6fa; --card: #ffffff; --border: #e2e8f0; --text: #1e293b; --muted: #64748b;
+    --green: #16a34a; --red: #dc2626; --amber: #d97706; --blue: #2563eb; --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; }
+  header {
+    background: linear-gradient(135deg, #1e293b, #334155); color: #fff;
+    padding: 26px 34px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+  }
+  header h1 { font-size: 20px; font-weight: 650; }
+  header .sub { color: #94a3b8; font-size: 13px; margin-top: 5px; }
+  .verdict { font-size: 15px; font-weight: 800; padding: 9px 22px; border-radius: 999px; letter-spacing: 1px; }
+  .verdict.PASSED { background: #16a34a; color: #fff; }
+  .verdict.FAILED { background: #dc2626; color: #fff; }
+  main { max-width: 1200px; margin: 0 auto; padding: 26px 24px 60px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; text-align: center; box-shadow: 0 1px 3px rgb(0 0 0 / .05); }
+  .stat .num { font-size: 30px; font-weight: 750; }
+  .stat .lbl { color: var(--muted); font-size: 12px; margin-top: 4px; text-transform: uppercase; letter-spacing: .8px; }
+  .num.green { color: var(--green); } .num.red { color: var(--red); } .num.amber { color: var(--amber); } .num.blue { color: var(--blue); }
+  .meta { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 22px; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px 26px; box-shadow: 0 1px 3px rgb(0 0 0 / .05); }
+  .meta div { font-size: 13px; }
+  .meta b { color: var(--muted); font-weight: 600; margin-right: 8px; text-transform: uppercase; font-size: 11px; letter-spacing: .6px; }
+  .feature { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; box-shadow: 0 1px 3px rgb(0 0 0 / .05); }
+  .feature > .head { padding: 15px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; }
+  .feature > .head:hover { background: #f8fafc; }
+  .feature .fname { font-weight: 650; font-size: 15px; flex: 1; }
+  .chip { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+  .chip.passed { background: #dcfce7; color: var(--green); }
+  .chip.failed { background: #fee2e2; color: var(--red); }
+  .chip.skipped, .chip.untested { background: #fef3c7; color: var(--amber); }
+  .scenario { border-top: 1px solid var(--border); }
+  .scenario > .head { padding: 12px 20px 12px 34px; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+  .scenario > .head:hover { background: #f8fafc; }
+  .scenario .sname { flex: 1; font-weight: 550; }
+  .tags { color: var(--blue); font-size: 12px; font-family: Consolas, monospace; }
+  .steps { padding: 4px 20px 16px 34px; display: none; }
+  .step { display: flex; gap: 10px; padding: 7px 10px; border-left: 3px solid var(--border); margin: 4px 0; background: #fafbfd; border-radius: 0 8px 8px 0; flex-wrap: wrap; align-items: baseline; }
+  .step.passed { border-left-color: var(--green); }
+  .step.failed { border-left-color: var(--red); background: #fef2f2; }
+  .step.skipped, .step.untested { border-left-color: var(--amber); opacity: .75; }
+  .step .kw { font-weight: 700; color: var(--blue); min-width: 46px; }
+  .step .dur { color: var(--muted); font-size: 12px; margin-left: auto; }
+  .error { width: 100%; margin-top: 6px; background: #7f1d1d; color: #fecaca; padding: 10px 12px; border-radius: 8px; font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; overflow-x: auto; }
+  .shots { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 2px; }
+  .shots img { height: 74px; border: 1px solid var(--border); border-radius: 6px; cursor: zoom-in; transition: transform .12s; }
+  .shots img:hover { transform: scale(1.05); }
+  .txt-attach { width: 100%; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 10px 12px; margin: 6px 0; font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; }
+  .txt-attach b { display: block; margin-bottom: 4px; color: var(--blue); }
+  #modal { position: fixed; inset: 0; background: rgb(0 0 0 / .82); display: none; align-items: center; justify-content: center; z-index: 50; cursor: zoom-out; padding: 30px; }
+  #modal img { max-width: 95%; max-height: 92%; border-radius: 10px; box-shadow: 0 10px 50px rgb(0 0 0 / .6); }
+  #modal .cap { position: fixed; bottom: 14px; left: 0; right: 0; text-align: center; color: #cbd5e1; font-size: 13px; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 22px; border-top: 1px solid var(--border); background: var(--card); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1 id="title"></h1>
+    <div class="sub" id="subtitle"></div>
+  </div>
+  <div class="verdict" id="verdict"></div>
+</header>
+
+<main>
+  <div class="cards" id="cards"></div>
+  <div class="meta" id="meta"></div>
+  <div id="features"></div>
+</main>
+
+<div id="modal"><img id="modalImg" alt="" /><div class="cap" id="modalCap"></div></div>
+
+<footer>
+  <p>Playwright + Behave BDD Framework — Automated Test Execution Report</p>
+  <p id="footerMeta" style="margin-top:4px"></p>
+</footer>
+
+<script>
+const DATA = /*__DATA__*/null;
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const statusOf = (el) => (el.status || 'unknown').toLowerCase();
+const fmtDur = (s) => s >= 60 ? `${Math.floor(s/60)}m ${(s%60).toFixed(0)}s` : `${s.toFixed(1)}s`;
+
+document.title = `E2E Report ${DATA.build}`;
+document.getElementById('title').textContent = DATA.projectName;
+document.getElementById('subtitle').textContent = `${DATA.env} • ${DATA.browser} • ${DATA.build.replace('_', ' ')}`;
+const v = document.getElementById('verdict');
+v.textContent = DATA.verdict; v.classList.add(DATA.verdict);
+document.getElementById('footerMeta').textContent = `ENV: ${DATA.env} • Build: ${DATA.build}`;
+
+const s = DATA.stats;
+document.getElementById('cards').innerHTML = `
+  <div class="stat"><div class="num blue">${s.features}</div><div class="lbl">Features</div></div>
+  <div class="stat"><div class="num">${s.scenarios}</div><div class="lbl">Scenarios</div></div>
+  <div class="stat"><div class="num green">${s.passed}</div><div class="lbl">Passed</div></div>
+  <div class="stat"><div class="num red">${s.failed}</div><div class="lbl">Failed</div></div>
+  <div class="stat"><div class="num amber">${s.skipped}</div><div class="lbl">Skipped</div></div>
+  <div class="stat"><div class="num">${fmtDur(DATA.durationSeconds)}</div><div class="lbl">Duration</div></div>`;
+
+document.getElementById('meta').innerHTML = `
+  <div><b>Environment</b>${esc(DATA.env)}</div>
+  <div><b>Browser</b>${esc(DATA.browser)}</div>
+  <div><b>Base URL</b>${esc(DATA.baseUrl)}</div>
+  <div><b>API Base URL</b>${esc(DATA.apiBaseUrl)}</div>
+  <div><b>Tags / Args</b>${esc(DATA.tags)}</div>
+  <div><b>Build</b>${esc(DATA.build)}</div>`;
+
+function attachmentsFor(el) {
+  const key = String(el.location || '').replace(/\\/g, '/');
+  return (DATA.attachments && DATA.attachments[key]) || [];
+}
+
+document.getElementById('features').innerHTML = DATA.features.map((f, fi) => {
+  const scen = (f.elements || []).filter(e => e.type !== 'background');
+  const counts = { passed: 0, failed: 0, skipped: 0 };
+  scen.forEach(e => {
+    const st = statusOf(e);
+    counts[st === 'failed' ? 'failed' : (st === 'skipped' || st === 'untested') ? 'skipped' : 'passed']++;
+  });
+  return `
+  <div class="feature">
+    <div class="head" onclick="this.parentElement.querySelectorAll('.scenario').forEach(x => x.classList.toggle('hidden-scen'))">
+      <span class="fname">${esc(f.name)}</span>
+      ${counts.passed ? `<span class="chip passed">✔ ${counts.passed}</span>` : ''}
+      ${counts.failed ? `<span class="chip failed">✖ ${counts.failed}</span>` : ''}
+      ${counts.skipped ? `<span class="chip skipped">⊘ ${counts.skipped}</span>` : ''}
+    </div>
+    ${scen.map((e, si) => {
+      const st = statusOf(e);
+      const atts = attachmentsFor(e);
+      const shots = atts.filter(a => a.type === 'image/png' && a.data);
+      const texts = atts.filter(a => a.type === 'text/plain');
+      return `
+      <div class="scenario">
+        <div class="head" onclick="const st = this.nextElementSibling; st.style.display = st.style.display === 'block' ? 'none' : 'block'">
+          <span class="chip ${st}">${st.toUpperCase()}</span>
+          <span class="sname">${esc(e.name)}</span>
+          <span class="tags">${(e.tags || []).map(t => '@' + String(t).replace(/^@/, '')).join(' ')}</span>
+        </div>
+        <div class="steps">
+          ${(e.steps || []).map((step, sti) => {
+            const r = step.result || {};
+            const stepShots = shots.filter(a => a.step_index === sti);
+            return `
+            <div class="step ${(r.status || 'untested').toLowerCase()}">
+              <span class="kw">${esc(step.keyword)}</span>
+              <span>${esc(step.name)}</span>
+              ${r.duration !== undefined ? `<span class="dur">${(r.duration).toFixed(2)}s</span>` : ''}
+              ${r.error_message ? `<div class="error">${esc(Array.isArray(r.error_message) ? r.error_message.join('\n') : r.error_message)}</div>` : ''}
+              ${stepShots.length ? `<div class="shots" style="width:100%">${stepShots.map(a =>
+                `<img src="${a.data}" alt="${esc(a.name)}" title="${esc(a.name)}" onclick="showModal(this.src, this.title)" />`).join('')}</div>` : ''}
+            </div>`;
+          }).join('')}
+          ${shots.filter(a => a.step_index === undefined).map(a =>
+            `<div class="shots"><img src="${a.data}" alt="${esc(a.name)}" title="${esc(a.name)}" onclick="showModal(this.src, this.title)" /></div>`).join('')}
+          ${texts.map(a => `<div class="txt-attach"><b>${esc(a.name)}</b>${esc(a.text)}</div>`).join('')}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}).join('');
+
+function showModal(src, cap) {
+  document.getElementById('modalImg').src = src;
+  document.getElementById('modalCap').textContent = cap || '';
+  document.getElementById('modal').style.display = 'flex';
+}
+document.getElementById('modal').onclick = () => document.getElementById('modal').style.display = 'none';
+
+// auto-expand failed scenarios
+document.querySelectorAll('.scenario').forEach(sc => {
+  if (sc.querySelector('.head .chip.failed')) sc.querySelector('.steps').style.display = 'block';
+});
+</script>
+</body>
+</html>
