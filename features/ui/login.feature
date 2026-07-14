@@ -9,6 +9,7 @@ Feature: SauceDemo Login
     Given I load login data for "TC_UI_001"
     When I login with the loaded credentials
     Then I should land on the inventory page
+    And the page should match the visual baseline "inventory"
 
   @regression @TC_UI_002
   Scenario: Login fails with locked out user

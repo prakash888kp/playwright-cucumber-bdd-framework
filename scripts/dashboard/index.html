@@ -120,12 +120,20 @@
   .counts span { margin-right: 8px; font-weight: 600; }
   .hidden { display: none !important; }
   .empty { color: var(--muted); text-align: center; padding: 40px; }
+
+  .trend { display: flex; align-items: flex-end; gap: 6px; height: 150px; padding: 18px 16px 14px; }
+  .trend a.col { flex: 1; max-width: 42px; display: flex; flex-direction: column-reverse; gap: 2px; text-decoration: none; }
+  .trend a.col:hover { filter: brightness(1.25); }
+  .trend a.col div { border-radius: 3px; min-height: 3px; }
+  .trend .empty-note { color: var(--muted); font-size: 13px; margin: auto; }
+  .tl-key { display: inline-flex; align-items: center; gap: 5px; margin-left: 14px; font-size: 11px; color: var(--muted); }
+  .tl-key i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Test Automation Dashboard <span class="dot">●</span> <span style="font-weight:400;color:var(--muted);font-size:13px">Playwright + Cucumber BDD</span></h1>
+  <h1>Test Automation Dashboard <span class="dot">●</span> <span style="font-weight:400;color:var(--muted);font-size:13px">Playwright + pytest-bdd</span></h1>
   <div class="status-pill" id="statusPill">IDLE</div>
 </header>
 
@@ -196,6 +204,10 @@
   <!-- ============ HISTORY TAB ============ -->
   <section id="tab-history" class="hidden">
     <div class="stats" id="histStats"></div>
+    <div class="card" style="margin-bottom:18px">
+      <h2>Trend — scenarios per run <span id="trendLegend" style="float:right;text-transform:none;letter-spacing:0"></span></h2>
+      <div class="trend" id="trend"></div>
+    </div>
     <div class="card">
       <h2>Previous Runs</h2>
       <div style="overflow-x:auto">
@@ -309,8 +321,27 @@ $('#runBtn').onclick = async () => {
 $('#stopBtn').onclick = () => fetch('/api/stop', { method: 'POST' });
 
 // ---------------- history
+function renderTrend(runs) {
+  const el = document.getElementById('trend');
+  const recent = runs.slice(0, 20).reverse(); // oldest -> newest, last 20
+  if (!recent.length) { el.innerHTML = '<span class="empty-note">No runs yet</span>'; return; }
+  const max = Math.max(...recent.map(r => (r.passed || 0) + (r.failed || 0) + (r.skipped || 0)), 1);
+  const C = { passed: 'var(--accent)', failed: 'var(--red)', skipped: 'var(--yellow)' };
+  el.innerHTML = recent.map(r => {
+    const rel = (r.report || '').replace(/\\/g, '/').replace(/^reports\//, '');
+    const title = `${(r.timestamp || '').replace('_', ' ')} — ✔ ${r.passed}  ✖ ${r.failed}  ⊘ ${r.skipped} (${r.verdict})`;
+    const seg = (k) => r[k] ? `<div style="background:${C[k]};height:${Math.max(r[k] / max * 118, 3)}px"></div>` : '';
+    return `<a class="col" href="/reports/${rel}" target="_blank" title="${title}">${seg('passed')}${seg('failed')}${seg('skipped')}</a>`;
+  }).join('');
+  document.getElementById('trendLegend').innerHTML =
+    `<span class="tl-key"><i style="background:var(--accent)"></i>passed</span>` +
+    `<span class="tl-key"><i style="background:var(--red)"></i>failed</span>` +
+    `<span class="tl-key"><i style="background:var(--yellow)"></i>skipped</span>`;
+}
+
 async function loadHistory() {
   const runs = await (await fetch('/api/history')).json();
+  renderTrend(runs);
   const total = runs.length;
   const passed = runs.filter(r => r.verdict === 'PASSED').length;
   const scen = runs.reduce((a, r) => a + (r.scenarios || 0), 0);

@@ -8,6 +8,7 @@ Feature: Users API
     When I send a GET request to the endpoint from test data
     Then the response status should match the expected status
     And the response field "name" should not be empty
+    And the response should match the JSON schema "user.schema.json"
 
   @regression @TC_API_002
   Scenario: Create a new post

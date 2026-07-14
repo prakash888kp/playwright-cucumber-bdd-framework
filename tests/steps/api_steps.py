@@ -1,12 +1,17 @@
 """Generic data-driven API steps using context.api."""
 import json
+from pathlib import Path
 
-from behave import step
+import jsonschema
+from pytest_bdd import parsers, step
 
 from framework.helpers import data_manager
 
+ROOT = Path(__file__).resolve().parents[2]
+SCHEMAS_DIR = ROOT / "config" / "schemas"
 
-@step('I load API data for "{tc_id}"')
+
+@step(parsers.parse('I load API data for "{tc_id}"'))
 def load_api_data(context, tc_id):
     context.data["api"] = data_manager.get_data("APIData", tc_id)
     row = context.data["api"]
@@ -32,7 +37,7 @@ def response_status_should_match(context):
     context.log.info(f"Status {expected} verified")
 
 
-@step('the response field "{field_path}" should not be empty')
+@step(parsers.parse('the response field "{field_path}" should not be empty'))
 def response_field_not_empty(context, field_path):
     value = context.api.body_path(field_path)
     assert value not in (None, ""), (
@@ -42,7 +47,17 @@ def response_field_not_empty(context, field_path):
     context.log.info(f'Field "{field_path}" = {json.dumps(value, default=str)}')
 
 
-@step('the response field "{field_path}" should equal "{expected}"')
+@step(parsers.parse('the response field "{field_path}" should equal "{expected}"'))
 def response_field_should_equal(context, field_path, expected):
     value = context.api.body_path(field_path)
     assert str(value) == expected, f'Field "{field_path}": expected "{expected}", got "{value}"'
+
+
+@step(parsers.parse('the response should match the JSON schema "{schema_file}"'))
+def response_matches_schema(context, schema_file):
+    schema = json.loads((SCHEMAS_DIR / schema_file).read_text(encoding="utf-8"))
+    try:
+        jsonschema.validate(context.api.body(), schema)
+    except jsonschema.ValidationError as exc:
+        raise AssertionError(f"Response violates schema {schema_file}: {exc.message}") from exc
+    context.log.info(f"Response conforms to schema {schema_file}")

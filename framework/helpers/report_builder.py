@@ -36,22 +36,33 @@ def _scenario_status(element):
     return (element.get("status") or "unknown").lower()
 
 
-def _filter_selected(features: list, attachments: dict) -> list:
-    """Drop scenarios that were excluded by tag selection. behave reports them
-    as "skipped", but hooks never ran for them — so unlike runtime skips
-    (e.g. RAG without AWS creds) they have no key in the attachments manifest."""
-    selected_features = []
-    for feature in features:
-        elements = [
-            el
-            for el in feature.get("elements", [])
-            if el.get("type") == "background"
-            or _scenario_status(el) not in ("skipped", "untested")
-            or str(el.get("location", "")).replace("\\", "/") in attachments
-        ]
-        if any(el.get("type") != "background" for el in elements):
-            selected_features.append({**feature, "elements": elements})
-    return selected_features
+def _load_worker_outputs() -> tuple[list, dict]:
+    """Merge per-xdist-worker results.*.json / attachments.*.json into one
+    behave-shaped features list + attachments manifest."""
+    records = []
+    for file in sorted(REPORTS_DIR.glob("results.*.json")):
+        records.extend(_read_json(file, []))
+    features: dict[str, dict] = {}
+    for r in records:
+        feature = features.setdefault(
+            r["feature_location"],
+            {"name": r["feature_name"], "location": r["feature_location"], "elements": []},
+        )
+        feature["elements"].append(
+            {
+                "type": "scenario",
+                "name": r["name"],
+                "tags": r["tags"],
+                "location": r["location"],
+                "status": r["status"],
+                "steps": r["steps"],
+            }
+        )
+    attachments: dict[str, list] = {}
+    for file in sorted(REPORTS_DIR.glob("attachments.*.json")):
+        for key, items in _read_json(file, {}).items():
+            attachments.setdefault(key, []).extend(items)
+    return list(features.values()), attachments
 
 
 def read_run_stats(features: list) -> dict:
@@ -90,13 +101,11 @@ def _embed_attachments(attachments: dict) -> dict:
 
 
 def build_report():
-    json_file = REPORTS_DIR / "behave-report.json"
-    if not json_file.exists():
-        logger.error("No reports/behave-report.json found — nothing to report.")
+    features, raw_attachments = _load_worker_outputs()
+    if not features:
+        logger.error("No reports/results.*.json found — nothing to report.")
         return None
 
-    raw_attachments = _read_json(REPORTS_DIR / "attachments.json", {})
-    features = _filter_selected(_read_json(json_file, []), raw_attachments)
     stats = read_run_stats(features)
     verdict = "FAILED" if stats["failed"] > 0 else "PASSED"
     stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -105,7 +114,7 @@ def build_report():
     (run_dir / "html").mkdir(parents=True, exist_ok=True)
 
     # Archive this run's raw artifacts
-    shutil.copy2(json_file, run_dir / "behave-report.json")
+    (run_dir / "results.json").write_text(json.dumps(features, indent=2), encoding="utf-8")
     traces_dir = REPORTS_DIR / "traces"
     if traces_dir.exists() and any(traces_dir.iterdir()):
         shutil.move(str(traces_dir), str(run_dir / "traces"))
@@ -124,7 +133,7 @@ def build_report():
     )
 
     data = {
-        "projectName": "Playwright + Behave BDD Framework",
+        "projectName": "Playwright + pytest-bdd Framework",
         "env": env.upper(),
         "build": stamp,
         "verdict": verdict,
@@ -147,12 +156,12 @@ def build_report():
     # Rerun file — failing scenario ID tags for `python scripts/run.py --rerun`
     failing_tags = sorted(
         {
-            tag
+            tag.lstrip("@")
             for feature in features
             for element in feature.get("elements", [])
             if _scenario_status(element) == "failed"
             for tag in element.get("tags", [])
-            if tag.startswith("TC_") or tag.startswith("@TC_")
+            if tag.lstrip("@").startswith("TC_")
         }
     )
     (REPORTS_DIR / "rerun.txt").write_text("\n".join(failing_tags), encoding="utf-8")

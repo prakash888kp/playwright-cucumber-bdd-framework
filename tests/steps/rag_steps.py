@@ -1,10 +1,10 @@
 """RAG validation steps — Bedrock Knowledge Base + deterministic/LLM-judge checks.
-Unconfigured machines skip via before_scenario in environment.py.
+Unconfigured machines skip via pytest_bdd_before_scenario in conftest.py.
 """
 import json
 import os
 
-from behave import step
+from pytest_bdd import parsers, step
 
 from framework.helpers import data_manager
 from framework.helpers.rag_validator import (
@@ -15,7 +15,7 @@ from framework.helpers.rag_validator import (
 from framework.support.attachments import attach_text
 
 
-@step('I load RAG data for "{tc_id}"')
+@step(parsers.parse('I load RAG data for "{tc_id}"'))
 def load_rag_data(context, tc_id):
     context.data["rag"] = data_manager.get_data("RAGData", tc_id)
     context.log.info(f"Loaded RAG data for {tc_id}: \"{context.data['rag']['Question']}\"")

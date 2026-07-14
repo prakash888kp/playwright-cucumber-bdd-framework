@@ -4,6 +4,15 @@ version = "2.0.0"
 description = "Enterprise Playwright + behave BDD framework (UI, API, RAG via Amazon Bedrock)"
 requires-python = ">=3.11"
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+bdd_features_base_dir = "features"
+addopts = "-ra"
+filterwarnings = [
+  "ignore::pytest.PytestUnknownMarkWarning",
+  "ignore::DeprecationWarning:gherkin.*",
+]
+
 [tool.ruff]
 line-length = 110
 target-version = "py311"
