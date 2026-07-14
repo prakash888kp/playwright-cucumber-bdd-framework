@@ -1,5 +1,6 @@
 """Winston-style logger — console + daily file, with scenario-scoped child loggers."""
 import logging
+import os
 import sys
 from datetime import date
 from pathlib import Path
@@ -14,7 +15,7 @@ if not logger.handlers:
     fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
 
     console = logging.StreamHandler(sys.stdout)
-    console.setLevel(logging.INFO)
+    console.setLevel(getattr(logging, os.environ.get("LOG_LEVEL", "info").upper(), logging.INFO))
     console.setFormatter(fmt)
     logger.addHandler(console)
 

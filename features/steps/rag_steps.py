@@ -7,12 +7,12 @@ import os
 from behave import step
 
 from framework.helpers import data_manager
-from framework.support.attachments import attach_text
 from framework.helpers.rag_validator import (
     assert_has_citations,
     assert_judge_verdict,
     assert_keyword_coverage,
 )
+from framework.support.attachments import attach_text
 
 
 @step('I load RAG data for "{tc_id}"')

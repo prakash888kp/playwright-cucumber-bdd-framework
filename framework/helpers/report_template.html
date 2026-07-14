@@ -5,179 +5,391 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Test Execution Report</title>
 <style>
-  :root {
-    --bg: #f4f6fa; --card: #ffffff; --border: #e2e8f0; --text: #1e293b; --muted: #64748b;
-    --green: #16a34a; --red: #dc2626; --amber: #d97706; --blue: #2563eb; --radius: 12px;
+  .viz-root, :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --border: rgba(11,11,11,.10);
+    --good: #0ca30c; --good-text: #006300; --warn: #fab219; --warn-text: #8a5a00;
+    --crit: #d03b3b; --accent: #2a78d6; --accent-wash: rgba(42,120,214,.08);
+    --radius: 14px; --shadow: 0 1px 2px rgb(11 11 11 / .04), 0 4px 14px rgb(11 11 11 / .05);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; }
-  header {
-    background: linear-gradient(135deg, #1e293b, #334155); color: #fff;
-    padding: 26px 34px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
-  }
-  header h1 { font-size: 20px; font-weight: 650; }
-  header .sub { color: #94a3b8; font-size: 13px; margin-top: 5px; }
-  .verdict { font-size: 15px; font-weight: 800; padding: 9px 22px; border-radius: 999px; letter-spacing: 1px; }
-  .verdict.PASSED { background: #16a34a; color: #fff; }
-  .verdict.FAILED { background: #dc2626; color: #fff; }
-  main { max-width: 1200px; margin: 0 auto; padding: 26px 24px 60px; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 22px; }
-  .stat { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; text-align: center; box-shadow: 0 1px 3px rgb(0 0 0 / .05); }
-  .stat .num { font-size: 30px; font-weight: 750; }
-  .stat .lbl { color: var(--muted); font-size: 12px; margin-top: 4px; text-transform: uppercase; letter-spacing: .8px; }
-  .num.green { color: var(--green); } .num.red { color: var(--red); } .num.amber { color: var(--amber); } .num.blue { color: var(--blue); }
-  .meta { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 22px; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px 26px; box-shadow: 0 1px 3px rgb(0 0 0 / .05); }
-  .meta div { font-size: 13px; }
-  .meta b { color: var(--muted); font-weight: 600; margin-right: 8px; text-transform: uppercase; font-size: 11px; letter-spacing: .6px; }
-  .feature { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; box-shadow: 0 1px 3px rgb(0 0 0 / .05); }
-  .feature > .head { padding: 15px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; }
-  .feature > .head:hover { background: #f8fafc; }
-  .feature .fname { font-weight: 650; font-size: 15px; flex: 1; }
-  .chip { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
-  .chip.passed { background: #dcfce7; color: var(--green); }
-  .chip.failed { background: #fee2e2; color: var(--red); }
-  .chip.skipped, .chip.untested { background: #fef3c7; color: var(--amber); }
-  .scenario { border-top: 1px solid var(--border); }
-  .scenario > .head { padding: 12px 20px 12px 34px; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
-  .scenario > .head:hover { background: #f8fafc; }
-  .scenario .sname { flex: 1; font-weight: 550; }
-  .tags { color: var(--blue); font-size: 12px; font-family: Consolas, monospace; }
-  .steps { padding: 4px 20px 16px 34px; display: none; }
-  .step { display: flex; gap: 10px; padding: 7px 10px; border-left: 3px solid var(--border); margin: 4px 0; background: #fafbfd; border-radius: 0 8px 8px 0; flex-wrap: wrap; align-items: baseline; }
-  .step.passed { border-left-color: var(--green); }
-  .step.failed { border-left-color: var(--red); background: #fef2f2; }
-  .step.skipped, .step.untested { border-left-color: var(--amber); opacity: .75; }
-  .step .kw { font-weight: 700; color: var(--blue); min-width: 46px; }
-  .step .dur { color: var(--muted); font-size: 12px; margin-left: auto; }
-  .error { width: 100%; margin-top: 6px; background: #7f1d1d; color: #fecaca; padding: 10px 12px; border-radius: 8px; font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; overflow-x: auto; }
-  .shots { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 2px; }
-  .shots img { height: 74px; border: 1px solid var(--border); border-radius: 6px; cursor: zoom-in; transition: transform .12s; }
-  .shots img:hover { transform: scale(1.05); }
-  .txt-attach { width: 100%; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 10px 12px; margin: 6px 0; font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; }
-  .txt-attach b { display: block; margin-bottom: 4px; color: var(--blue); }
-  #modal { position: fixed; inset: 0; background: rgb(0 0 0 / .82); display: none; align-items: center; justify-content: center; z-index: 50; cursor: zoom-out; padding: 30px; }
-  #modal img { max-width: 95%; max-height: 92%; border-radius: 10px; box-shadow: 0 10px 50px rgb(0 0 0 / .6); }
-  #modal .cap { position: fixed; bottom: 14px; left: 0; right: 0; text-align: center; color: #cbd5e1; font-size: 13px; }
-  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 22px; border-top: 1px solid var(--border); background: var(--card); }
+  html { scroll-behavior: smooth; }
+  body { background: var(--page); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; line-height: 1.45; }
+
+  /* ---------------- header ---------------- */
+  header { background: var(--surface); border-bottom: 1px solid var(--grid); }
+  .hwrap { max-width: 1240px; margin: 0 auto; padding: 22px 28px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .brand h1 { font-size: 19px; font-weight: 650; letter-spacing: -.01em; }
+  .brand .sub { color: var(--ink-2); font-size: 13px; margin-top: 3px; }
+  .brand .sub b { font-weight: 600; color: var(--ink); }
+  .spacer { flex: 1; }
+  .verdict { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; padding: 9px 18px; border-radius: 999px; letter-spacing: .4px; }
+  .verdict.PASSED { background: rgba(12,163,12,.10); color: var(--good-text); }
+  .verdict.FAILED { background: rgba(208,59,59,.10); color: var(--crit); }
+  .verdict .ic { font-size: 15px; }
+
+  main { max-width: 1240px; margin: 0 auto; padding: 24px 28px 70px; }
+
+  /* ---------------- overview: donut + tiles ---------------- */
+  .overview { display: grid; grid-template-columns: 320px 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 900px) { .overview { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .donut-card { padding: 20px 22px; display: flex; align-items: center; gap: 22px; }
+  .donut-wrap { position: relative; width: 148px; height: 148px; flex: none; }
+  .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+  .donut-center .pct { font-size: 34px; font-weight: 650; letter-spacing: -.02em; }
+  .donut-center .cap { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-top: 1px; }
+  .legend { display: flex; flex-direction: column; gap: 10px; }
+  .legend .row { display: flex; align-items: center; gap: 9px; font-size: 13px; }
+  .legend .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .legend .lbl { color: var(--ink-2); min-width: 62px; }
+  .legend .val { font-weight: 650; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; justify-content: center; }
+  .tile .lbl { font-size: 12px; color: var(--ink-2); margin-bottom: 6px; }
+  .tile .val { font-size: 26px; font-weight: 650; letter-spacing: -.01em; display: flex; align-items: center; gap: 8px; }
+  .tile .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+  /* ---------------- run info ---------------- */
+  .runinfo { padding: 14px 22px; margin-bottom: 22px; display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 8px 28px; }
+  .runinfo div { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .runinfo b { display: inline-block; color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .7px; margin-right: 8px; min-width: 86px; }
+
+  /* ---------------- toolbar ---------------- */
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar input { flex: 1; min-width: 220px; background: var(--surface); border: 1px solid var(--grid); border-radius: 10px; padding: 9px 14px; font-size: 13px; color: var(--ink); outline: none; }
+  .toolbar input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-wash); }
+  .fbtn { background: var(--surface); border: 1px solid var(--grid); color: var(--ink-2); border-radius: 999px; padding: 7px 15px; font-size: 12.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+  .fbtn:hover { border-color: var(--accent); color: var(--ink); }
+  .fbtn.active { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+  .fbtn .n { opacity: .65; font-weight: 500; }
+
+  /* ---------------- features ---------------- */
+  .feature { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; }
+  .fhead { padding: 15px 20px; display: flex; align-items: center; gap: 14px; cursor: pointer; user-select: none; flex-wrap: wrap; }
+  .fhead:hover { background: rgba(11,11,11,.015); }
+  .fhead .caret { color: var(--muted); font-size: 11px; transition: transform .15s; }
+  .feature.open .fhead .caret { transform: rotate(90deg); }
+  .fhead .fname { font-weight: 650; font-size: 15px; }
+  .fhead .fpath { color: var(--muted); font-size: 12px; font-family: Consolas, monospace; }
+  .fhead .fstats { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .minibar { display: flex; width: 120px; height: 8px; border-radius: 4px; overflow: hidden; gap: 2px; background: var(--grid); }
+  .minibar span { height: 100%; }
+  .fdur { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  .status { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; letter-spacing: .3px; }
+  .status.passed { background: rgba(12,163,12,.10); color: var(--good-text); }
+  .status.failed { background: rgba(208,59,59,.10); color: var(--crit); }
+  .status.skipped, .status.untested { background: rgba(250,178,25,.14); color: var(--warn-text); }
+
+  .fbody { display: none; border-top: 1px solid var(--grid); }
+  .feature.open .fbody { display: block; }
+
+  .scenario { border-bottom: 1px solid var(--grid); }
+  .scenario:last-child { border-bottom: none; }
+  .shead { padding: 12px 20px 12px 30px; display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; flex-wrap: wrap; }
+  .shead:hover { background: rgba(11,11,11,.015); }
+  .shead .sname { font-weight: 550; flex: 1; min-width: 200px; }
+  .tag { color: var(--accent); background: var(--accent-wash); font-size: 11px; font-family: Consolas, monospace; padding: 2px 8px; border-radius: 6px; }
+  .sdur { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .sbody { display: none; padding: 4px 20px 18px 30px; }
+  .scenario.open .sbody { display: block; }
+
+  .step { display: flex; gap: 10px; padding: 8px 12px; border-left: 3px solid var(--grid); margin: 5px 0; background: var(--page); border-radius: 0 9px 9px 0; flex-wrap: wrap; align-items: baseline; }
+  .step.passed { border-left-color: var(--good); }
+  .step.failed { border-left-color: var(--crit); background: rgba(208,59,59,.05); }
+  .step.skipped, .step.untested { border-left-color: var(--warn); opacity: .78; }
+  .step .kw { font-weight: 700; color: var(--accent); min-width: 48px; font-size: 13px; }
+  .step .txt { flex: 1; min-width: 200px; }
+  .step .dur { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .error { width: 100%; margin-top: 8px; background: #40100f; color: #ffd9d6; padding: 12px 14px; border-radius: 9px; font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; overflow-x: auto; line-height: 1.5; }
+
+  .shots { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 2px; width: 100%; }
+  .shot { position: relative; cursor: zoom-in; }
+  .shot img { height: 86px; border: 1px solid var(--grid); border-radius: 8px; display: block; transition: transform .12s, box-shadow .12s; }
+  .shot:hover img { transform: translateY(-2px); box-shadow: var(--shadow); }
+  .txt-attach { width: 100%; background: var(--accent-wash); border: 1px solid rgba(42,120,214,.22); border-radius: 9px; padding: 11px 14px; margin: 8px 0; font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; }
+  .txt-attach b { display: block; margin-bottom: 5px; color: var(--accent); font-family: system-ui, sans-serif; }
+
+  .empty { text-align: center; color: var(--muted); padding: 46px 20px; background: var(--surface); border: 1px dashed var(--grid); border-radius: var(--radius); }
+
+  /* ---------------- modal ---------------- */
+  #modal { position: fixed; inset: 0; background: rgb(11 11 11 / .85); display: none; align-items: center; justify-content: center; z-index: 60; padding: 34px; flex-direction: column; gap: 14px; }
+  #modal.show { display: flex; }
+  #modal img { max-width: 94%; max-height: 84vh; border-radius: 12px; box-shadow: 0 18px 70px rgb(0 0 0 / .55); cursor: zoom-out; }
+  #modal .bar { display: flex; align-items: center; gap: 16px; color: #e6e5df; font-size: 13px; }
+  #modal button { background: rgb(255 255 255 / .12); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 13px; }
+  #modal button:hover { background: rgb(255 255 255 / .22); }
+
+  /* ---------------- tooltip ---------------- */
+  #tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--surface); font-size: 12px; padding: 6px 10px; border-radius: 7px; display: none; z-index: 70; white-space: nowrap; }
+
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 26px; border-top: 1px solid var(--grid); background: var(--surface); }
+  footer .brandline { font-weight: 600; color: var(--ink-2); }
 </style>
 </head>
 <body>
+
 <header>
-  <div>
-    <h1 id="title"></h1>
-    <div class="sub" id="subtitle"></div>
+  <div class="hwrap">
+    <div class="brand">
+      <h1 id="title"></h1>
+      <div class="sub" id="subtitle"></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="verdict" id="verdict"></div>
   </div>
-  <div class="verdict" id="verdict"></div>
 </header>
 
 <main>
-  <div class="cards" id="cards"></div>
-  <div class="meta" id="meta"></div>
+  <div class="overview">
+    <div class="card donut-card">
+      <div class="donut-wrap">
+        <svg id="donut" viewBox="0 0 148 148" width="148" height="148" role="img" aria-label="Scenario results"></svg>
+        <div class="donut-center"><div class="pct" id="passPct"></div><div class="cap">pass rate</div></div>
+      </div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+  </div>
+
+  <div class="card runinfo" id="runinfo"></div>
+
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Search features, scenarios, tags…" />
+    <button class="fbtn active" data-f="all">All <span class="n" id="nAll"></span></button>
+    <button class="fbtn" data-f="passed">✔ Passed <span class="n" id="nPassed"></span></button>
+    <button class="fbtn" data-f="failed">✖ Failed <span class="n" id="nFailed"></span></button>
+    <button class="fbtn" data-f="skipped">⊘ Skipped <span class="n" id="nSkipped"></span></button>
+  </div>
+
   <div id="features"></div>
+  <div class="empty" id="noMatch" style="display:none">No scenarios match the current filter.</div>
 </main>
 
-<div id="modal"><img id="modalImg" alt="" /><div class="cap" id="modalCap"></div></div>
+<div id="modal">
+  <img id="modalImg" alt="" />
+  <div class="bar">
+    <button id="mPrev">‹ Prev</button>
+    <span id="modalCap"></span>
+    <button id="mNext">Next ›</button>
+    <button id="mClose">Close ✕</button>
+  </div>
+</div>
+<div id="tip"></div>
 
 <footer>
-  <p>Playwright + Behave BDD Framework — Automated Test Execution Report</p>
+  <p class="brandline">Playwright + Behave BDD Framework — Automated Test Execution Report</p>
   <p id="footerMeta" style="margin-top:4px"></p>
 </footer>
 
 <script>
 const DATA = /*__DATA__*/null;
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const statusOf = (el) => (el.status || 'unknown').toLowerCase();
-const fmtDur = (s) => s >= 60 ? `${Math.floor(s/60)}m ${(s%60).toFixed(0)}s` : `${s.toFixed(1)}s`;
+const STATUS = { passed: 'var(--good)', failed: 'var(--crit)', skipped: 'var(--warn)', untested: 'var(--warn)' };
+const ICON = { passed: '✔', failed: '✖', skipped: '⊘', untested: '⊘' };
+const norm = (st) => { st = (st || 'unknown').toLowerCase(); return st === 'untested' ? 'skipped' : st; };
+const fmtDur = (s) => s >= 60 ? `${Math.floor(s / 60)}m ${(s % 60).toFixed(0)}s` : `${s.toFixed(1)}s`;
+const stepDur = (e) => (e.steps || []).reduce((a, st) => a + ((st.result || {}).duration || 0), 0);
 
+/* ---------- header ---------- */
 document.title = `E2E Report ${DATA.build}`;
 document.getElementById('title').textContent = DATA.projectName;
-document.getElementById('subtitle').textContent = `${DATA.env} • ${DATA.browser} • ${DATA.build.replace('_', ' ')}`;
+document.getElementById('subtitle').innerHTML =
+  `<b>${esc(DATA.env)}</b> &nbsp;·&nbsp; ${esc(DATA.browser)} &nbsp;·&nbsp; ${esc(DATA.build).replace('_', ' ')}`;
 const v = document.getElementById('verdict');
-v.textContent = DATA.verdict; v.classList.add(DATA.verdict);
-document.getElementById('footerMeta').textContent = `ENV: ${DATA.env} • Build: ${DATA.build}`;
+v.innerHTML = `<span class="ic">${DATA.verdict === 'PASSED' ? '✔' : '✖'}</span> ${DATA.verdict}`;
+v.classList.add(DATA.verdict);
+document.getElementById('footerMeta').textContent = `ENV: ${DATA.env} · Build: ${DATA.build} · Generated by the framework's own Python report builder`;
 
+/* ---------- stats ---------- */
 const s = DATA.stats;
-document.getElementById('cards').innerHTML = `
-  <div class="stat"><div class="num blue">${s.features}</div><div class="lbl">Features</div></div>
-  <div class="stat"><div class="num">${s.scenarios}</div><div class="lbl">Scenarios</div></div>
-  <div class="stat"><div class="num green">${s.passed}</div><div class="lbl">Passed</div></div>
-  <div class="stat"><div class="num red">${s.failed}</div><div class="lbl">Failed</div></div>
-  <div class="stat"><div class="num amber">${s.skipped}</div><div class="lbl">Skipped</div></div>
-  <div class="stat"><div class="num">${fmtDur(DATA.durationSeconds)}</div><div class="lbl">Duration</div></div>`;
+const passPct = s.scenarios ? Math.round(s.passed / s.scenarios * 100) : 0;
+document.getElementById('passPct').textContent = passPct + '%';
 
-document.getElementById('meta').innerHTML = `
+/* ---------- donut (status palette; 2px surface gaps) ---------- */
+(function donut() {
+  const svg = document.getElementById('donut');
+  const cx = 74, cy = 74, r = 58, w = 17;
+  const segs = [
+    { k: 'passed', n: s.passed }, { k: 'failed', n: s.failed }, { k: 'skipped', n: s.skipped },
+  ].filter(x => x.n > 0);
+  const total = segs.reduce((a, x) => a + x.n, 0) || 1;
+  const gap = segs.length > 1 ? 2 / r : 0; // ~2px surface gap in radians
+  let a0 = -Math.PI / 2;
+  const tip = document.getElementById('tip');
+  if (!segs.length) {
+    svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--grid)" stroke-width="${w}"/>`;
+    return;
+  }
+  for (const seg of segs) {
+    const sweep = (seg.n / total) * Math.PI * 2 - gap;
+    const a1 = a0 + Math.max(sweep, 0.02);
+    const large = (a1 - a0) > Math.PI ? 1 : 0;
+    const p = (a) => `${cx + r * Math.cos(a)} ${cy + r * Math.sin(a)}`;
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    el.setAttribute('d', `M ${p(a0)} A ${r} ${r} 0 ${large} 1 ${p(a1)}`);
+    el.setAttribute('fill', 'none');
+    el.setAttribute('stroke', STATUS[seg.k]);
+    el.setAttribute('stroke-width', w);
+    el.setAttribute('stroke-linecap', 'butt');
+    el.style.cursor = 'default';
+    el.addEventListener('mousemove', (ev) => {
+      tip.style.display = 'block';
+      tip.textContent = `${ICON[seg.k]} ${seg.k[0].toUpperCase() + seg.k.slice(1)}: ${seg.n} (${Math.round(seg.n / total * 100)}%)`;
+      tip.style.left = (ev.clientX + 14) + 'px';
+      tip.style.top = (ev.clientY + 14) + 'px';
+    });
+    el.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    svg.appendChild(el);
+    a0 = a1 + gap;
+  }
+})();
+
+document.getElementById('legend').innerHTML = ['passed', 'failed', 'skipped'].map(k => `
+  <div class="row">
+    <span class="swatch" style="background:${STATUS[k]}"></span>
+    <span class="lbl">${ICON[k]} ${k[0].toUpperCase() + k.slice(1)}</span>
+    <span class="val">${s[k]}</span>
+  </div>`).join('');
+
+/* ---------- tiles ---------- */
+document.getElementById('tiles').innerHTML = `
+  <div class="tile"><div class="lbl">Scenarios</div><div class="val">${s.scenarios}</div></div>
+  <div class="tile"><div class="lbl">Passed</div><div class="val"><span class="dot" style="background:var(--good)"></span>${s.passed}</div></div>
+  <div class="tile"><div class="lbl">Failed</div><div class="val"><span class="dot" style="background:var(--crit)"></span>${s.failed}</div></div>
+  <div class="tile"><div class="lbl">Skipped</div><div class="val"><span class="dot" style="background:var(--warn)"></span>${s.skipped}</div></div>
+  <div class="tile"><div class="lbl">Features</div><div class="val">${s.features}</div></div>
+  <div class="tile"><div class="lbl">Duration</div><div class="val">${fmtDur(DATA.durationSeconds)}</div></div>`;
+
+/* ---------- run info ---------- */
+document.getElementById('runinfo').innerHTML = `
   <div><b>Environment</b>${esc(DATA.env)}</div>
   <div><b>Browser</b>${esc(DATA.browser)}</div>
   <div><b>Base URL</b>${esc(DATA.baseUrl)}</div>
-  <div><b>API Base URL</b>${esc(DATA.apiBaseUrl)}</div>
-  <div><b>Tags / Args</b>${esc(DATA.tags)}</div>
+  <div><b>API base URL</b>${esc(DATA.apiBaseUrl)}</div>
+  <div title="${esc(DATA.tags)}"><b>Tags / args</b>${esc(DATA.tags)}</div>
   <div><b>Build</b>${esc(DATA.build)}</div>`;
 
+/* ---------- features ---------- */
 function attachmentsFor(el) {
   const key = String(el.location || '').replace(/\\/g, '/');
   return (DATA.attachments && DATA.attachments[key]) || [];
 }
+const allShots = []; // flat gallery for modal prev/next
 
 document.getElementById('features').innerHTML = DATA.features.map((f, fi) => {
   const scen = (f.elements || []).filter(e => e.type !== 'background');
   const counts = { passed: 0, failed: 0, skipped: 0 };
-  scen.forEach(e => {
-    const st = statusOf(e);
-    counts[st === 'failed' ? 'failed' : (st === 'skipped' || st === 'untested') ? 'skipped' : 'passed']++;
-  });
+  scen.forEach(e => counts[norm(e.status)] = (counts[norm(e.status)] || 0) + 1);
+  const fdur = scen.reduce((a, e) => a + stepDur(e), 0);
+  const total = scen.length || 1;
+  const bar = ['passed', 'failed', 'skipped']
+    .filter(k => counts[k])
+    .map(k => `<span style="background:${STATUS[k]};flex:${counts[k] / total}"></span>`)
+    .join('');
   return `
-  <div class="feature">
-    <div class="head" onclick="this.parentElement.querySelectorAll('.scenario').forEach(x => x.classList.toggle('hidden-scen'))">
+  <div class="feature ${counts.failed ? 'open' : ''}" data-fi="${fi}">
+    <div class="fhead" onclick="this.parentElement.classList.toggle('open')">
+      <span class="caret">▶</span>
       <span class="fname">${esc(f.name)}</span>
-      ${counts.passed ? `<span class="chip passed">✔ ${counts.passed}</span>` : ''}
-      ${counts.failed ? `<span class="chip failed">✖ ${counts.failed}</span>` : ''}
-      ${counts.skipped ? `<span class="chip skipped">⊘ ${counts.skipped}</span>` : ''}
+      <span class="fpath">${esc(String(f.location || '').split(':')[0])}</span>
+      <span class="fstats">
+        <span class="minibar">${bar}</span>
+        ${['passed', 'failed', 'skipped'].filter(k => counts[k]).map(k =>
+          `<span class="status ${k}">${ICON[k]} ${counts[k]}</span>`).join('')}
+        <span class="fdur">${fmtDur(fdur)}</span>
+      </span>
     </div>
-    ${scen.map((e, si) => {
-      const st = statusOf(e);
-      const atts = attachmentsFor(e);
-      const shots = atts.filter(a => a.type === 'image/png' && a.data);
-      const texts = atts.filter(a => a.type === 'text/plain');
-      return `
-      <div class="scenario">
-        <div class="head" onclick="const st = this.nextElementSibling; st.style.display = st.style.display === 'block' ? 'none' : 'block'">
-          <span class="chip ${st}">${st.toUpperCase()}</span>
-          <span class="sname">${esc(e.name)}</span>
-          <span class="tags">${(e.tags || []).map(t => '@' + String(t).replace(/^@/, '')).join(' ')}</span>
-        </div>
-        <div class="steps">
-          ${(e.steps || []).map((step, sti) => {
-            const r = step.result || {};
-            const stepShots = shots.filter(a => a.step_index === sti);
-            return `
-            <div class="step ${(r.status || 'untested').toLowerCase()}">
-              <span class="kw">${esc(step.keyword)}</span>
-              <span>${esc(step.name)}</span>
-              ${r.duration !== undefined ? `<span class="dur">${(r.duration).toFixed(2)}s</span>` : ''}
-              ${r.error_message ? `<div class="error">${esc(Array.isArray(r.error_message) ? r.error_message.join('\n') : r.error_message)}</div>` : ''}
-              ${stepShots.length ? `<div class="shots" style="width:100%">${stepShots.map(a =>
-                `<img src="${a.data}" alt="${esc(a.name)}" title="${esc(a.name)}" onclick="showModal(this.src, this.title)" />`).join('')}</div>` : ''}
-            </div>`;
-          }).join('')}
-          ${shots.filter(a => a.step_index === undefined).map(a =>
-            `<div class="shots"><img src="${a.data}" alt="${esc(a.name)}" title="${esc(a.name)}" onclick="showModal(this.src, this.title)" /></div>`).join('')}
-          ${texts.map(a => `<div class="txt-attach"><b>${esc(a.name)}</b>${esc(a.text)}</div>`).join('')}
-        </div>
-      </div>`;
-    }).join('')}
+    <div class="fbody">
+      ${scen.map((e) => {
+        const st = norm(e.status);
+        const atts = attachmentsFor(e);
+        const shots = atts.filter(a => a.type === 'image/png' && a.data);
+        const texts = atts.filter(a => a.type === 'text/plain');
+        shots.forEach(a => { a._gi = allShots.length; allShots.push(a); });
+        const hay = `${f.name} ${e.name} ${(e.tags || []).join(' ')}`.toLowerCase();
+        return `
+        <div class="scenario ${st === 'failed' ? 'open' : ''}" data-status="${st}" data-hay="${esc(hay)}">
+          <div class="shead" onclick="this.parentElement.classList.toggle('open')">
+            <span class="status ${st}">${ICON[st]} ${st.toUpperCase()}</span>
+            <span class="sname">${esc(e.name)}</span>
+            ${(e.tags || []).map(t => `<span class="tag">@${esc(String(t).replace(/^@/, ''))}</span>`).join('')}
+            <span class="sdur">${fmtDur(stepDur(e))}</span>
+          </div>
+          <div class="sbody">
+            ${(e.steps || []).map((step, sti) => {
+              const r = step.result || {};
+              const sShots = shots.filter(a => a.step_index === sti);
+              return `
+              <div class="step ${(r.status || 'untested').toLowerCase()}">
+                <span class="kw">${esc(step.keyword)}</span>
+                <span class="txt">${esc(step.name)}</span>
+                ${r.duration !== undefined ? `<span class="dur">${r.duration.toFixed(2)}s</span>` : ''}
+                ${r.error_message ? `<div class="error">${esc(Array.isArray(r.error_message) ? r.error_message.join('\n') : r.error_message)}</div>` : ''}
+                ${sShots.length ? `<div class="shots">${sShots.map(a =>
+                  `<span class="shot" onclick="openModal(${a._gi})"><img src="${a.data}" alt="${esc(a.name)}" loading="lazy" /></span>`).join('')}</div>` : ''}
+              </div>`;
+            }).join('')}
+            ${shots.filter(a => a.step_index === undefined).map(a =>
+              `<div class="shots"><span class="shot" onclick="openModal(${a._gi})"><img src="${a.data}" alt="${esc(a.name)}" loading="lazy" /></span></div>`).join('')}
+            ${texts.map(a => `<div class="txt-attach"><b>${esc(a.name)}</b>${esc(a.text)}</div>`).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
   </div>`;
-}).join('');
+}).join('') || '<div class="empty">No scenarios in this run.</div>';
 
-function showModal(src, cap) {
-  document.getElementById('modalImg').src = src;
-  document.getElementById('modalCap').textContent = cap || '';
-  document.getElementById('modal').style.display = 'flex';
+/* ---------- filter + search ---------- */
+const counts = { all: s.scenarios, passed: s.passed, failed: s.failed, skipped: s.skipped };
+for (const k of ['All', 'Passed', 'Failed', 'Skipped'])
+  document.getElementById('n' + k).textContent = counts[k.toLowerCase()];
+let filter = 'all';
+function applyFilter() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  let any = false;
+  document.querySelectorAll('.feature').forEach(f => {
+    let visible = 0;
+    f.querySelectorAll('.scenario').forEach(sc => {
+      const ok = (filter === 'all' || sc.dataset.status === filter) && (!q || sc.dataset.hay.includes(q));
+      sc.style.display = ok ? '' : 'none';
+      if (ok) visible++;
+    });
+    f.style.display = visible ? '' : 'none';
+    if (visible && (q || filter !== 'all')) f.classList.add('open');
+    any = any || visible > 0;
+  });
+  document.getElementById('noMatch').style.display = any ? 'none' : '';
 }
-document.getElementById('modal').onclick = () => document.getElementById('modal').style.display = 'none';
+document.getElementById('search').addEventListener('input', applyFilter);
+document.querySelectorAll('.fbtn').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.fbtn').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  filter = b.dataset.f;
+  applyFilter();
+}));
 
-// auto-expand failed scenarios
-document.querySelectorAll('.scenario').forEach(sc => {
-  if (sc.querySelector('.head .chip.failed')) sc.querySelector('.steps').style.display = 'block';
+/* ---------- modal gallery ---------- */
+let mIdx = 0;
+function openModal(i) { mIdx = i; renderModal(); document.getElementById('modal').classList.add('show'); }
+function renderModal() {
+  const a = allShots[mIdx];
+  document.getElementById('modalImg').src = a.data;
+  document.getElementById('modalCap').textContent = `${mIdx + 1} / ${allShots.length} — ${a.name || ''}`;
+}
+const closeModal = () => document.getElementById('modal').classList.remove('show');
+document.getElementById('mClose').onclick = closeModal;
+document.getElementById('modalImg').onclick = closeModal;
+document.getElementById('mPrev').onclick = (e) => { e.stopPropagation(); mIdx = (mIdx - 1 + allShots.length) % allShots.length; renderModal(); };
+document.getElementById('mNext').onclick = (e) => { e.stopPropagation(); mIdx = (mIdx + 1) % allShots.length; renderModal(); };
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('modal').classList.contains('show')) return;
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'ArrowLeft') document.getElementById('mPrev').click();
+  if (e.key === 'ArrowRight') document.getElementById('mNext').click();
 });
 </script>
 </body>

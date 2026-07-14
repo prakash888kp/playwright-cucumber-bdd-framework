@@ -49,6 +49,16 @@ def before_all(context):
     context.attachments = {}  # scenario location -> list of attachments for the report
 
 
+def before_feature(context, feature):
+    # RETRY env: re-run failing scenarios up to N extra times (flake shield).
+    retries = int(os.environ.get("RETRY", 0))
+    if retries > 0:
+        from behave.contrib.scenario_autoretry import patch_scenario_with_autoretry
+
+        for scenario in feature.scenarios:
+            patch_scenario_with_autoretry(scenario, max_attempts=retries + 1)
+
+
 def before_scenario(context, scenario):
     context.log = scenario_logger(scenario.name)
     context.log.info(f"--- Scenario started: {scenario.name} ---")

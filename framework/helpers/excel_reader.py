@@ -18,6 +18,6 @@ def read_sheet(file_path, sheet_name: str) -> list[dict]:
     for row in rows:
         if all(cell is None for cell in row):
             continue
-        result.append({h: ("" if v is None else v) for h, v in zip(headers, row)})
+        result.append({h: ("" if v is None else v) for h, v in zip(headers, row, strict=False)})
     wb.close()
     return result

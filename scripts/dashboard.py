@@ -22,7 +22,7 @@ import queue
 import subprocess
 import sys
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
@@ -111,7 +111,7 @@ def start_run(body: dict):
 
     with state_lock:
         log_buffer = []
-        run_info = {"mode": mode, "label": label, "startedAt": datetime.now(timezone.utc).isoformat()}
+        run_info = {"mode": mode, "label": label, "startedAt": datetime.now(UTC).isoformat()}
     push_log(
         f">>> {label}  [ENV={env.get('ENV', 'qa')} BROWSER={env.get('BROWSER', 'chromium')} "
         f"HEADLESS={env.get('HEADLESS', 'true')}]"

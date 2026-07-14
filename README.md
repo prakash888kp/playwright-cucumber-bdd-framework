@@ -87,7 +87,10 @@ reports/
   latest-run.txt             # path to the newest archive
 ```
 
+The dashboard includes a pass-rate donut with hover tooltips, stat tiles, live search + status filter chips (All/Passed/Failed/Skipped), per-feature result bars and durations, expandable scenarios/steps, error panes, and a screenshot gallery with keyboard-navigable modal — all in one self-contained file.
+
 - **Per-step screenshots**: every UI step embeds a screenshot in the report (`STEP_SCREENSHOTS=on|failure|off` in `.env`) — visual evidence for each action and validation
+- **Flake shield**: set `RETRY=1` (or more) to auto-retry failing scenarios that many extra times before marking them failed
 - `python scripts/generate_report.py` — manual rebuild from the last `behave-report.json` (rarely needed; runs auto-report)
 - `python -m playwright show-trace <run folder>/traces/<file>.zip` — step-through debugging
 - `logs/execution-<date>.log` — execution log with scenario-scoped labels
@@ -118,6 +121,12 @@ scripts/
   generate_excels.py           # scaffold the workbooks
   generate_report.py           # manual HTML dashboard rebuild
 ```
+
+## Quality gates
+
+- **Lint**: `python -m ruff check .` (config in `pyproject.toml`) — enforced in CI
+- **CI**: `.github/workflows/tests.yml` runs lint + the smoke suite on every push/PR and uploads the report archive as an artifact; trigger manually with any tag expression via *workflow_dispatch*
+- **Control-sheet audit**: the excel runner warns about `ScenarioID`s with no matching feature tag (and vice-versa) so the sheet can't silently drift from the code
 
 ## Adding a new scenario
 

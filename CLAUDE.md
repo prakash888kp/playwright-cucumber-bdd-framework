@@ -30,6 +30,10 @@ Key flow, spanning multiple files:
 - **Report builder** (`framework/helpers/report_builder.py` + `report_template.html`): pure Python replacement for the old Node reporter — renders a self-contained `html/index.html` (screenshots embedded base64). behave's JSON marks tag-EXCLUDED scenarios as "skipped"; the builder drops them by checking for an attachments-manifest key (hooks only run for selected scenarios), so runtime skips (RAG without creds) still show as skipped.
 - **RAG skip behavior**: `before_scenario` in `environment.py` calls `scenario.skip()` when AWS creds or `BEDROCK_KB_ID` are missing — RAG scenarios skip rather than fail on unconfigured machines.
 
+- **Retries**: `RETRY=n` env re-runs failing scenarios up to n extra times via behave's `scenario_autoretry` (patched per feature in `before_feature`).
+- **Lint/CI**: `python -m ruff check .` (rules in `pyproject.toml`); `.github/workflows/tests.yml` runs lint + smoke on push/PR and uploads the run archive artifact.
+- **Control-sheet audit**: `excel_runner.py` warns when ScenarioIDs in the sheet have no matching feature tag or vice-versa.
+
 ## Gotchas
 
 - xlsx workbooks are binary — inspect/edit them via `framework/helpers/excel_reader.py` or a small python script, and remember `generate_excels.py` clobbers them.
