@@ -1,0 +1,117 @@
+/**
+ * Report builder — called automatically after every run (all three run modes).
+ *
+ * Each run gets its own archive folder so history is never overwritten:
+ *   reports/run_2026-07-14_12-45-30_qa_PASSED/
+ *     ├── html/index.html        rich dashboard (multiple-cucumber-html-reporter)
+ *     ├── cucumber-report.json   raw results for this run
+ *     ├── cucumber-report.html   cucumber's single-file report
+ *     └── traces/                Playwright traces captured during this run
+ *
+ * Also maintains reports/run-history.json + prints a summary, and writes
+ * reports/latest-run.txt pointing at the newest archive.
+ */
+const path = require('path');
+const fs = require('fs-extra');
+const { logger } = require('./logger');
+
+const ROOT = path.resolve(__dirname, '..', '..');
+const REPORTS_DIR = path.join(ROOT, 'reports');
+const HISTORY_FILE = path.join(REPORTS_DIR, 'run-history.json');
+
+function readRunStats(jsonFile) {
+  const features = fs.readJsonSync(jsonFile, { throws: false }) || [];
+  const stats = { features: features.length, scenarios: 0, passed: 0, failed: 0, skipped: 0 };
+  for (const feature of features) {
+    for (const element of feature.elements || []) {
+      if (element.type === 'background') continue;
+      stats.scenarios++;
+      const steps = (element.steps || []).filter((s) => !s.hidden || s.result.status === 'failed');
+      const statuses = (element.steps || []).map((s) => s.result?.status);
+      if (statuses.includes('failed')) stats.failed++;
+      else if (statuses.every((s) => s === 'skipped')) stats.skipped++;
+      else stats.passed++;
+    }
+  }
+  return stats;
+}
+
+async function buildReport() {
+  const jsonFile = path.join(REPORTS_DIR, 'cucumber-report.json');
+  if (!fs.existsSync(jsonFile)) {
+    logger.error('No reports/cucumber-report.json found — nothing to report.');
+    return null;
+  }
+
+  const stats = readRunStats(jsonFile);
+  const verdict = stats.failed > 0 ? 'FAILED' : 'PASSED';
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const stamp =
+    `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` +
+    `_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+  const env = process.env.ENV || 'qa';
+  const runDir = path.join(REPORTS_DIR, `run_${stamp}_${env}_${verdict}`);
+  fs.mkdirpSync(runDir);
+
+  // Archive this run's raw artifacts
+  fs.copySync(jsonFile, path.join(runDir, 'cucumber-report.json'));
+  const builtinHtml = path.join(REPORTS_DIR, 'cucumber-report.html');
+  if (fs.existsSync(builtinHtml)) fs.copySync(builtinHtml, path.join(runDir, 'cucumber-report.html'));
+  const tracesDir = path.join(REPORTS_DIR, 'traces');
+  if (fs.existsSync(tracesDir) && fs.readdirSync(tracesDir).length) {
+    fs.moveSync(tracesDir, path.join(runDir, 'traces'), { overwrite: true });
+  }
+
+  // Rich dashboard — jsonDir must contain ONLY this run's json
+  // v4 generate() is async — must be awaited or process.exit() truncates the report
+  const { generate } = await import('multiple-cucumber-html-reporter');
+  await generate({
+    jsonDir: runDir,
+    reportPath: path.join(runDir, 'html'),
+    pageTitle: `E2E Report ${stamp}`,
+    reportName: `Playwright + Cucumber BDD — ${env.toUpperCase()} — ${stamp}`,
+    displayDuration: true,
+    displayReportTime: true,
+    metadata: {
+      browser: { name: process.env.BROWSER || 'chromium', version: 'latest' },
+      device: 'CI / Local',
+      platform: { name: process.platform, version: process.env.OS || '' },
+    },
+    // v4 customData is a flat key/value object (not v3's {title, data:[...]})
+    customData: {
+      projectName: 'Playwright + Cucumber BDD Framework',
+      environment: env.toUpperCase(),
+      buildNumber: stamp,
+      'Base URL': process.env.BASE_URL || '-',
+      'API Base URL': process.env.API_BASE_URL || '-',
+      'Tags / Profile': process.env.TAGS || process.env.RUN_ARGS || '(all)',
+      Verdict: verdict,
+      Scenarios: `${stats.passed} passed / ${stats.failed} failed / ${stats.skipped} skipped`,
+    },
+  });
+
+  // Run history ledger
+  const history = fs.readJsonSync(HISTORY_FILE, { throws: false }) || [];
+  history.push({
+    timestamp: stamp,
+    env,
+    browser: process.env.BROWSER || 'chromium',
+    tags: process.env.TAGS || process.env.RUN_ARGS || '(all)',
+    verdict,
+    ...stats,
+    report: path.relative(ROOT, path.join(runDir, 'html', 'index.html')),
+  });
+  fs.writeJsonSync(HISTORY_FILE, history, { spaces: 2 });
+  fs.writeFileSync(path.join(REPORTS_DIR, 'latest-run.txt'), runDir);
+
+  const reportPath = path.join(runDir, 'html', 'index.html');
+  logger.info('='.repeat(70));
+  logger.info(`Run verdict : ${verdict}  (${stats.passed} passed, ${stats.failed} failed, ${stats.skipped} skipped)`);
+  logger.info(`Report      : ${reportPath}`);
+  logger.info(`Run history : ${HISTORY_FILE} (${history.length} runs tracked)`);
+  logger.info('='.repeat(70));
+  return { runDir, reportPath, stats, verdict };
+}
+
+module.exports = { buildReport };
