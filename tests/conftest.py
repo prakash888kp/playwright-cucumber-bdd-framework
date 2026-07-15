@@ -167,6 +167,8 @@ def pytest_bdd_before_scenario(request, feature, scenario):
         "location": location,
         "steps": [],
         "all_steps": [{"keyword": _step_keyword(s), "name": s.name} for s in scenario.steps],
+        "start": time.time(),
+        "worker": _worker_id(),
     }
     _attachments.setdefault(location, [])
 
@@ -251,6 +253,9 @@ def pytest_runtest_makereport(item, call):
                 "location": bdd["location"],
                 "status": status,
                 "steps": bdd["steps"],
+                "start": bdd["start"],
+                "end": time.time(),
+                "worker": bdd["worker"],
             }
         )
 

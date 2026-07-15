@@ -56,6 +56,9 @@ def _load_worker_outputs() -> tuple[list, dict]:
                 "location": r["location"],
                 "status": r["status"],
                 "steps": r["steps"],
+                "start": r.get("start"),
+                "end": r.get("end"),
+                "worker": r.get("worker"),
             }
         )
     attachments: dict[str, list] = {}
@@ -132,6 +135,19 @@ def build_report():
         for step in element.get("steps", [])
     )
 
+    # This run's history entry — appended to the ledger AND embedded in the
+    # report (with the recent past) so the trend chart includes this run.
+    history = _read_json(HISTORY_FILE, [])
+    history_entry = {
+        "timestamp": stamp,
+        "env": env,
+        "browser": os.environ.get("BROWSER", "chromium"),
+        "tags": os.environ.get("TAGS") or os.environ.get("RUN_ARGS") or "(all)",
+        "verdict": verdict,
+        **stats,
+        "report": str((run_dir / "html" / "index.html").relative_to(ROOT)),
+    }
+
     data = {
         "projectName": "Playwright + pytest-bdd Framework",
         "env": env.upper(),
@@ -146,6 +162,10 @@ def build_report():
         "tags": os.environ.get("TAGS") or os.environ.get("RUN_ARGS") or "(all)",
         "features": features,
         "attachments": attachments,
+        "history": [
+            {k: h.get(k) for k in ("timestamp", "verdict", "scenarios", "passed", "failed", "skipped")}
+            for h in [*history, history_entry][-20:]
+        ],
     }
 
     template = TEMPLATE_FILE.read_text(encoding="utf-8")
@@ -167,18 +187,7 @@ def build_report():
     (REPORTS_DIR / "rerun.txt").write_text("\n".join(failing_tags), encoding="utf-8")
 
     # Run history ledger
-    history = _read_json(HISTORY_FILE, [])
-    history.append(
-        {
-            "timestamp": stamp,
-            "env": env,
-            "browser": os.environ.get("BROWSER", "chromium"),
-            "tags": os.environ.get("TAGS") or os.environ.get("RUN_ARGS") or "(all)",
-            "verdict": verdict,
-            **stats,
-            "report": str((run_dir / "html" / "index.html").relative_to(ROOT)),
-        }
-    )
+    history.append(history_entry)
     HISTORY_FILE.write_text(json.dumps(history, indent=2), encoding="utf-8")
     (REPORTS_DIR / "latest-run.txt").write_text(str(run_dir), encoding="utf-8")
 
