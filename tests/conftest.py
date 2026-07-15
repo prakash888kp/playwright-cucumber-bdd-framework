@@ -170,7 +170,9 @@ def pytest_bdd_before_scenario(request, feature, scenario):
         "start": time.time(),
         "worker": _worker_id(),
     }
-    _attachments.setdefault(location, [])
+    # Reset per attempt: pytest-rerunfailures re-enters this hook on each retry,
+    # so a fresh list keeps only the final attempt's screenshots.
+    _attachments[location] = []
 
     # Skip RAG scenarios gracefully when AWS credentials / KB are not configured,
     # so the suite stays green on machines without Bedrock access.
@@ -199,6 +201,14 @@ def _step_screenshot(request, step, failed=False):
         return
     if mode == "failure" and not failed:
         return
+    # A screenshot of a not-yet-navigated page (about:blank) is a blank white
+    # frame — skip it unless the step actually failed there.
+    if not failed:
+        try:
+            if not ctx.page.url or ctx.page.url == "about:blank":
+                return
+        except Exception:
+            return
     try:
         key = request.node._scenario_key
         shot_dir = SCREENSHOT_DIR / _slug(key)
@@ -244,6 +254,9 @@ def pytest_runtest_makereport(item, call):
         status = "passed" if rep.passed else "failed" if rep.failed else "skipped"
         for pending in bdd["all_steps"][len(bdd["steps"]):]:
             bdd["steps"].append({**pending, "result": {"status": "untested"}})
+        # pytest-rerunfailures re-runs failing tests: drop any earlier attempt's
+        # record for this scenario so only the final outcome is reported.
+        _records[:] = [r for r in _records if r["location"] != bdd["location"]]
         _records.append(
             {
                 "feature_name": bdd["feature_name"],
