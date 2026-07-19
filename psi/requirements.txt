@@ -1,0 +1,10 @@
+# PSI (Playwright Swarm Intelligence) — extra deps beyond the framework's requirements.txt
+# The Orchestrator + agents run with only the base framework deps (offline mode).
+
+# MCP server (Mode 1 — Kiro / Claude Code / Claude Desktop):
+mcp>=1.2.0
+
+# Claude API provider (PSI_LLM_PROVIDER=anthropic) — the official Anthropic SDK:
+anthropic>=0.40.0
+
+# Bedrock provider uses boto3, already pinned in the framework requirements.txt.

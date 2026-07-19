@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "psi-orchestrator": {
+      "command": "python",
+      "args": ["-m", "psi.server"],
+      "env": {
+        "PSI_LLM_PROVIDER": "anthropic",
+        "PSI_ANTHROPIC_MODEL": "claude-opus-4-8"
+      }
+    }
+  }
+}

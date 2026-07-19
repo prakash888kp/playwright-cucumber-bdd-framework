@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "psi-orchestrator": {
+      "command": "python",
+      "args": ["-m", "psi.server"],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "AWS_REGION": "us-east-1",
+        "PSI_BEDROCK_MODEL_ID": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+      },
+      "disabled": false,
+      "autoApprove": ["list_agents"]
+    }
+  }
+}

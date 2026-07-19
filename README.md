@@ -142,6 +142,27 @@ scripts/
 - **CI**: `.github/workflows/tests.yml` runs lint + the smoke suite on every push/PR and uploads the report archive as an artifact; trigger manually with any tag expression via *workflow_dispatch*
 - **Control-sheet audit**: the excel runner warns about `ScenarioID`s with no matching feature tag (and vice-versa) so the sheet can't silently drift from the code
 
+## PSI — AI test generation (Playwright Swarm Intelligence)
+
+`psi/` is an agentic layer that turns a plain-language requirement (or Jira
+ticket) into pytest-bdd + Playwright tests **in this framework**, then
+self-verifies and self-heals them. An 8-agent swarm (Flow, Coverage, Selector,
+Assertion, Mutation, Optimizer, Coder, Self-Healing) runs behind an
+Orchestrator, grounded by a token-optimizing Knowledge Graph. It runs offline,
+or with the **Claude API** / **Bedrock**, and is exposed as an MCP server for
+Kiro / Claude Code / Claude Desktop.
+
+```bash
+pip install -r psi/requirements.txt
+python -m psi.server          # MCP server (Mode 1)
+# or call directly:
+python -c "from psi.orchestrator import Orchestrator; import json; \
+print(json.dumps(Orchestrator().generate('Verify GET /users/4 returns an email', ticket_id='DEMO').to_dict(), indent=2))"
+```
+
+Full usage, the calling reference for every entry point, and the Knowledge-Graph
+design are in **[`psi/README.md`](psi/README.md)**.
+
 ## Adding a new scenario
 
 1. Write the scenario in a `.feature` file and tag it with a unique ID (`@TC_UI_004`) plus suite tags (`@ui @regression`)

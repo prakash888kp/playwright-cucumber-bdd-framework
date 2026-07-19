@@ -31,10 +31,12 @@ from framework.helpers.bedrock_helper import BedrockHelper  # noqa: E402
 from framework.helpers.logger import logger, scenario_logger  # noqa: E402
 from framework.support.page_manager import PageManager  # noqa: E402
 
+# Auto-discover every step module in tests/steps/ so PSI-generated step files
+# (gen_*_steps.py) are picked up without editing this list.
 pytest_plugins = [
-    "tests.steps.ui_steps",
-    "tests.steps.api_steps",
-    "tests.steps.rag_steps",
+    f"tests.steps.{p.stem}"
+    for p in sorted((ROOT / "tests" / "steps").glob("*.py"))
+    if p.stem != "__init__"
 ]
 
 REPORTS_DIR = ROOT / "reports"
