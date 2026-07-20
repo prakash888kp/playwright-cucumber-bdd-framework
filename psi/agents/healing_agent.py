@@ -47,6 +47,10 @@ class HealingAgent(BaseAgent):
         except Exception:
             return None
 
+    def probe(self, endpoint: str) -> int | None:
+        """Public: the status this endpoint actually returns right now."""
+        return self._probe(endpoint)
+
     def fix(self, plan: dict) -> bool:
         """Repair API status mismatches in place. Returns True if anything changed."""
         if plan.get("type") != "api":

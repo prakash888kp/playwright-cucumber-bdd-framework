@@ -1,14 +1,46 @@
 # PSI — Playwright Swarm Intelligence (Orchestrator + MCP server)
 
-The shared agentic core that turns a plain-language requirement into pytest-bdd +
-Playwright tests **in this framework**, then self-verifies them before they are
-offered as a PR. Both delivery modes call the same Orchestrator:
+The agentic core that turns a plain-language requirement into pytest-bdd +
+Playwright tests **in this framework**, then self-verifies and self-heals them
+before they are offered as a PR.
 
-- **Mode 1 — AI-assisted (local):** Kiro CLI/chat launches the MCP server
-  (`psi.server`) and calls the `generate_tests` tool. Human in the loop.
-- **Mode 2 — autonomous (AWS):** a Jira webhook Lambda imports
-  `psi.orchestrator.Orchestrator` directly and opens a PR with the branch link
-  posted back to the ticket.
+## Three ways to run it
+
+| Mode | Who does the reasoning | Cost | Use when |
+|------|------------------------|------|----------|
+| **0 — IDE-native (recommended)** | **Your IDE's model** (Kiro $20 plan, Claude Pro/Code) reads markdown agent files and plays all 8 roles | **No API key, no per-token cost** | Day-to-day authoring in Kiro / Claude Code |
+| 1 — MCP server | `psi.server` calls the Claude API or Bedrock | Pay-per-token | Automating from any MCP host |
+| 2 — Autonomous (Phase 2) | A Jira webhook Lambda drives the Orchestrator on AWS | Pay-per-token | Hands-off CI generation |
+
+### Mode 0 — IDE-native, zero API cost
+
+The insight: with a Kiro or Claude subscription the LLM is **already in the IDE**.
+So the IDE model *is* the swarm, and this package only supplies the deterministic
+muscle (knowledge retrieval, file writing, xlsx upsert, test running, endpoint
+probing) through a small CLI that never calls an LLM.
+
+Files that make the agents callable in the IDE:
+
+| File | IDE | What it does |
+|------|-----|--------------|
+| `.claude/skills/psi/SKILL.md` | Claude Code | Auto-triggers on "generate tests for X"; defines all 8 roles + the workflow |
+| `.claude/commands/psi.md` | Claude Code | `/psi <requirement>` |
+| `.claude/commands/psi-heal.md` | Claude Code | `/psi-heal <scenario id>` |
+| `.kiro/steering/psi.md` | Kiro | Load with `#psi`, same playbook |
+
+The CLI those files drive (all pure Python, no LLM):
+
+```bash
+python -m psi.cli context "<requirement>"   # scoped KG slice + reuse-cache hit (token saver)
+python -m psi.cli apply   .psi/plan.json    # render plan -> feature files + xlsx rows (upsert)
+python -m psi.cli verify  "<tag expr>"      # the self-verify gate
+python -m psi.cli probe   users/99999999    # real HTTP status, for self-healing
+python -m psi.cli record  .psi/plan.json    # remember it in the Knowledge Graph
+python -m psi.cli status                    # KG token report + framework index
+```
+
+Typical loop (all inside the IDE session):
+`context → plan → apply → verify` → if red: `probe → correct → apply → verify` → `record`.
 
 ## Pipeline (8 agents)
 
